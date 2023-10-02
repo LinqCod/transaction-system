@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  service:
+    container_name: user_transaction_service
+    build:
+      context: .
+      dockerfile: build/docker/service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    links:
+      - db
+    depends_on:
+      - db
+      - nats
+    env_file:
+      .env
+
+  db:
+    container_name: user_transaction_db
+    build:
+      context: build/docker/db
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    volumes:
+      - pg_data:/var/lib/postgres/data
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    env_file:
+      .env
+
+  nats:
+    image: nats:latest
+    restart: on-failure
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--js", "--jetstream"]
+
+volumes:
+  pg_data:
