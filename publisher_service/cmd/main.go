@@ -37,7 +37,7 @@ func main() {
 	//init routing
 	router := api.InitRouter(logger)
 
-	// init jetstream
+	// init server
 	serverAddr := fmt.Sprintf(":%s", viper.GetString("SERVER_PORT"))
 	srv := &http.Server{
 		Addr:    serverAddr,

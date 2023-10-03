@@ -24,7 +24,7 @@ func InitRouter(logger *zap.SugaredLogger) *gin.Engine {
 
 	api := router.Group("/api/v1")
 	{
-		transactions := api.Group("/transactions")
+		transactions := api.Group("/accounts")
 		{
 			transactions.POST("/invoice", transactionHandler.HandleTransaction(dto.InvoiceTransactionType))
 			transactions.POST("/withdraw", transactionHandler.HandleTransaction(dto.WithdrawTransactionType))

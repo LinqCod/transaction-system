@@ -1,10 +1,8 @@
 package model
 
 const (
-	InvoiceTransactionType  = "Invoice"
 	WithdrawTransactionType = "Withdraw"
 
-	StatusCreated = "Created"
 	StatusError   = "Error"
 	StatusSuccess = "Success"
 )

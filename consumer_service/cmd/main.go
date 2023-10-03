@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"github.com/linqcod/transaction-system/consumer_service/internal/model"
 	"github.com/linqcod/transaction-system/consumer_service/internal/repository"
 	"github.com/linqcod/transaction-system/consumer_service/pkg/config"
+	"github.com/linqcod/transaction-system/consumer_service/pkg/currencyapi"
 	"github.com/linqcod/transaction-system/consumer_service/pkg/database"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -79,36 +78,55 @@ func main() {
 			}
 
 			account, err := accountRepository.GetAccount(transaction.CardNumber)
-			if errors.Is(err, sql.ErrNoRows) {
+			if err != nil {
 				transaction.Status = model.StatusError
-				//TODO: error because of nil account
-			} else if err != nil {
+				logTransaction(transaction, logger)
 				logger.Errorf("error while getting account by card number: %v", err)
-				//TODO: how
 				continue
 			}
 
-			switch transaction.Type {
-			case model.InvoiceTransactionType:
-				newBalance := account.Balance + transaction.Amount
-				if err = accountRepository.UpdateAccountBalance(transaction.CardNumber, newBalance); err != nil {
-					logger.Errorf("error while updating account balance: %v", err)
-					continue
-				}
-				transaction.Status = model.StatusSuccess
-			case model.WithdrawTransactionType:
-				newBalance := account.Balance - transaction.Amount
-				if newBalance < 0 {
-					transaction.Status = model.StatusError
-				} else if err = accountRepository.UpdateAccountBalance(transaction.CardNumber, newBalance); err != nil {
-					logger.Errorf("error while updating account balance: %v", err)
-					continue
-				} else {
-					transaction.Status = model.StatusSuccess
-				}
+			currencyCoefficient, err := currencyapi.ConvertCurrencies(transaction.Currency, "RUB")
+			if err != nil {
+				transaction.Status = model.StatusError
+				logTransaction(transaction, logger)
+				logger.Errorf("error while converting currencies: %v", err)
+				continue
 			}
 
-			logger.Infof("Final: Card: %s, Currency: %s, Amount: %f, Type: %s, Status:%s", transaction.CardNumber, transaction.Currency, transaction.Amount, transaction.Type, transaction.Status)
+			transaction.Amount *= currencyCoefficient
+
+			if transaction.Type == model.WithdrawTransactionType {
+				transaction.Amount *= -1
+			}
+
+			newBalance := account.Balance + transaction.Amount
+
+			if newBalance < 0 {
+				transaction.Status = model.StatusError
+				logTransaction(transaction, logger)
+				logger.Errorln("error: account balance cannot be less than zero")
+				continue
+			}
+
+			if err = accountRepository.UpdateAccountBalance(transaction.CardNumber, newBalance); err != nil {
+				transaction.Status = model.StatusError
+				logTransaction(transaction, logger)
+				logger.Errorln("error while updating account balance: %v", err)
+				continue
+			}
+
+			transaction.Status = model.StatusSuccess
+			logTransaction(transaction, logger)
 		}
 	}
+}
+
+func logTransaction(transaction model.Transaction, logger *zap.SugaredLogger) {
+	logger.Infof("Transaction: Card: %s, Currency: %s, Amount: %f, Type: %s, Status:%s",
+		transaction.CardNumber,
+		transaction.Currency,
+		transaction.Amount,
+		transaction.Type,
+		transaction.Status,
+	)
 }
