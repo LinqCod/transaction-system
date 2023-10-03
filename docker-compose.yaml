@@ -1,21 +1,30 @@
 version: '3.8'
 
 services:
-  service:
-    container_name: user_transaction_service
+  publisher_service:
+    container_name: transaction_publisher_service
     build:
       context: .
-      dockerfile: build/docker/service/Dockerfile
+      dockerfile: build/docker/publisher_service/Dockerfile
     restart: unless-stopped
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
+    depends_on:
+      - nats
+    env_file:
+      .env
+
+  consumer_service:
+    container_name: transaction_consumer_service
+    build:
+      context: .
+      dockerfile: build/docker/consumer_service/Dockerfile
+    restart: unless-stopped
     links:
       - db
     depends_on:
       - db
       - nats
-    env_file:
-      .env
 
   db:
     container_name: user_transaction_db

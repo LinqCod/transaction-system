@@ -1,10 +1,11 @@
 FROM golang:1.21-alpine AS builder
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY ./consumer_service/go.mod ./consumer_service/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY .env .
+COPY ./consumer_service .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app ./cmd/main.go
 
@@ -19,7 +20,5 @@ WORKDIR /app
 
 COPY --from=builder /app/app .
 COPY --from=builder /app/.env .
-
-EXPOSE 8080
 
 CMD ["./app"]

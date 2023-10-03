@@ -3,23 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/linqcod/transaction-system/cmd/api"
-	"github.com/linqcod/transaction-system/internal/model"
-	"github.com/linqcod/transaction-system/pkg/config"
-	"github.com/linqcod/transaction-system/pkg/database"
-	_ "github.com/linqcod/transaction-system/pkg/database"
+	"github.com/linqcod/transaction-system/consumer_service/internal/model"
+	"github.com/linqcod/transaction-system/consumer_service/pkg/config"
+	"github.com/linqcod/transaction-system/consumer_service/pkg/database"
 	"github.com/nats-io/nats.go"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
-	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 )
 
@@ -97,7 +88,7 @@ func subscribe(js nats.JetStreamContext) error {
 			if err := json.Unmarshal(msg.Data, &transaction); err != nil {
 				log.Fatal(err)
 			}
-			log.Println("transaction-review service")
+			log.Println("transaction-review publisher_service")
 			log.Printf("Card: %s, Currency: %s, Amount: %f, Status:%s\n", transaction.Card, transaction.Currency, transaction.Amount, transaction.Status)
 		}
 	}
@@ -107,12 +98,12 @@ func subscribe(js nats.JetStreamContext) error {
 
 //func main() {
 //	// Connect to NATS server
-//	nc, err := nats.Connect("nats://nats:4222")
+//	nc, err := jetstream.Connect("jetstream://jetstream:4222")
 //	if err != nil {
 //		log.Fatal(err)
 //	}
 //
-//	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
+//	js, err := nc.JetStream(jetstream.PublishAsyncMaxPending(256))
 //	if err != nil {
 //		log.Fatal(err)
 //	}
@@ -152,37 +143,5 @@ func main() {
 	}
 	defer db.Close()
 
-	//init routing
-	router := api.InitRouter(context.Background(), logger, db)
-
-	// init server
-	serverAddr := fmt.Sprintf(":%s", viper.GetString("SERVER_PORT"))
-	srv := &http.Server{
-		Addr:    serverAddr,
-		Handler: router,
-	}
-
-	// graceful shutdown
-	stopped := make(chan struct{})
-	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-		<-sigint
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := srv.Shutdown(ctx); err != nil {
-			logger.Fatalf("error while trying to shutdown http server: %v", err)
-		}
-		close(stopped)
-	}()
-
-	logger.Infof("Starting HTTP server on %s", serverAddr)
-
-	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		logger.Fatalf("HTTP server ListenAndServe Error: %v", err)
-	}
-
-	<-stopped
-
-	log.Printf("Have a nice day :)")
+	// TODO: subscribe
 }
