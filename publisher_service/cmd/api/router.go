@@ -14,7 +14,7 @@ func InitRouter(logger *zap.SugaredLogger) *gin.Engine {
 	//init nats, handler and group endpoints
 	js, err := jetstream.Connect()
 	if err != nil {
-		logger.Fatalf("error while connecting to nats server: %v", err)
+		logger.Fatalf("error while connecting to nats jetstream: %v", err)
 	}
 	if err = jetstream.CreateStream(js); err != nil {
 		logger.Fatalf("error while creating stream: %v", err)

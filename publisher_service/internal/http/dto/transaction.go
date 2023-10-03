@@ -5,8 +5,6 @@ const (
 	WithdrawTransactionType = "Withdraw"
 
 	CreatedTransactionStatus = "Created"
-	ErrorTransactionStatus   = "Error"
-	SuccessTransactionStatus = "Success"
 )
 
 type TransactionDTO struct {

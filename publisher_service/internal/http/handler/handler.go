@@ -64,6 +64,8 @@ func (h TransactionHandler) HandleTransaction(transactionType string) gin.Handle
 			return
 		}
 
+		h.logger.Infof("transaction sent successfully: %v", transaction)
+
 		c.JSON(http.StatusOK, transactionType+" transaction published successfully")
 	}
 }

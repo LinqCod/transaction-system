@@ -37,7 +37,7 @@ func main() {
 	//init routing
 	router := api.InitRouter(logger)
 
-	// init server
+	// init jetstream
 	serverAddr := fmt.Sprintf(":%s", viper.GetString("SERVER_PORT"))
 	srv := &http.Server{
 		Addr:    serverAddr,
@@ -53,15 +53,15 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Fatalf("error while trying to shutdown http server: %v", err)
+			logger.Fatalf("error while trying to shutdown http jetstream: %v", err)
 		}
 		close(stopped)
 	}()
 
-	logger.Infof("Starting HTTP server on %s", serverAddr)
+	logger.Infof("Starting HTTP jetstream on %s", serverAddr)
 
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		logger.Fatalf("HTTP server ListenAndServe Error: %v", err)
+		logger.Fatalf("HTTP jetstream ListenAndServe Error: %v", err)
 	}
 
 	<-stopped
