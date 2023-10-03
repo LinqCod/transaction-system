@@ -7,8 +7,9 @@ const (
 )
 
 type Transaction struct {
-	Card     string
-	Currency string
-	Amount   float64
-	Status   string
+	CardNumber string  `json:"card_number"`
+	Currency   string  `json:"currency"`
+	Amount     float64 `json:"amount"`
+	Type       string  `json:"type,omitempty"`
+	Status     string  `json:"status,omitempty"`
 }
