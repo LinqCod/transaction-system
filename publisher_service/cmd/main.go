@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/linqcod/transaction-system/publisher_service/cmd/api"
 	"github.com/linqcod/transaction-system/publisher_service/pkg/config"
+	"github.com/linqcod/transaction-system/publisher_service/pkg/database"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,8 +35,15 @@ func main() {
 
 	logger := baseLogger.Sugar()
 
+	// init db connection
+	db, err := database.InitDB()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer db.Close()
+
 	//init routing
-	router := api.InitRouter(logger)
+	router := api.InitRouter(db, logger)
 
 	// init server
 	serverAddr := fmt.Sprintf(":%s", viper.GetString("SERVER_PORT"))

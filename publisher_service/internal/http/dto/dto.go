@@ -1,11 +1,8 @@
 package dto
 
-const (
-	InvoiceTransactionType  = "Invoice"
-	WithdrawTransactionType = "Withdraw"
-
-	CreatedTransactionStatus = "Created"
-)
+type ErrorDTO struct {
+	Error string `json:"error"`
+}
 
 type TransactionDTO struct {
 	CardNumber string  `json:"card_number"`

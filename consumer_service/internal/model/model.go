@@ -2,15 +2,17 @@ package model
 
 const (
 	WithdrawTransactionType = "Withdraw"
+	InvoiceTransactionType  = "Invoice"
 
 	StatusError   = "Error"
 	StatusSuccess = "Success"
 )
 
 type Account struct {
-	Id         int64   `json:"id"`
-	CardNumber string  `json:"cardNumber"`
-	Balance    float64 `json:"balance"`
+	Id            int64   `json:"id"`
+	CardNumber    string  `json:"cardNumber"`
+	Balance       float64 `json:"balance"`
+	FrozenBalance float64 `json:"frozen_balance"`
 }
 
 type Transaction struct {

@@ -95,6 +95,24 @@ func main() {
 
 			transaction.Amount *= currencyCoefficient
 
+			if transaction.Type == model.InvoiceTransactionType {
+				newFrozenBalance := account.FrozenBalance - transaction.Amount
+
+				if newFrozenBalance < 0 {
+					transaction.Status = model.StatusError
+					logTransaction(transaction, logger)
+					logger.Errorln("error: account frozen balance cannot be less than zero")
+					continue
+				}
+
+				if err = accountRepository.UpdateAccountFrozenBalance(transaction.CardNumber, newFrozenBalance); err != nil {
+					transaction.Status = model.StatusError
+					logTransaction(transaction, logger)
+					logger.Errorln("error while updating account frozen balance: %v", err)
+					continue
+				}
+			}
+
 			if transaction.Type == model.WithdrawTransactionType {
 				transaction.Amount *= -1
 			}

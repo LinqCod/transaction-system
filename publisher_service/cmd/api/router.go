@@ -1,14 +1,17 @@
 package api
 
 import (
+	"context"
+	"database/sql"
 	"github.com/gin-gonic/gin"
-	"github.com/linqcod/transaction-system/publisher_service/internal/http/dto"
 	"github.com/linqcod/transaction-system/publisher_service/internal/http/handler"
 	"github.com/linqcod/transaction-system/publisher_service/internal/jetstream"
+	"github.com/linqcod/transaction-system/publisher_service/internal/model"
+	"github.com/linqcod/transaction-system/publisher_service/internal/repository"
 	"go.uber.org/zap"
 )
 
-func InitRouter(logger *zap.SugaredLogger) *gin.Engine {
+func InitRouter(db *sql.DB, logger *zap.SugaredLogger) *gin.Engine {
 	router := gin.Default()
 
 	//init nats, handler and group endpoints
@@ -20,14 +23,17 @@ func InitRouter(logger *zap.SugaredLogger) *gin.Engine {
 		logger.Fatalf("error while creating stream: %v", err)
 	}
 
-	transactionHandler := handler.NewTransactionHandler(logger, js)
+	accountRepo := repository.NewAccountRepository(context.Background(), db)
+
+	transactionHandler := handler.NewTransactionHandler(logger, js, accountRepo)
 
 	api := router.Group("/api/v1")
 	{
-		transactions := api.Group("/accounts")
+		accounts := api.Group("/accounts")
 		{
-			transactions.POST("/invoice", transactionHandler.HandleTransaction(dto.InvoiceTransactionType))
-			transactions.POST("/withdraw", transactionHandler.HandleTransaction(dto.WithdrawTransactionType))
+			accounts.POST("/invoice", transactionHandler.HandleTransaction(model.InvoiceTransactionType))
+			accounts.POST("/withdraw", transactionHandler.HandleTransaction(model.WithdrawTransactionType))
+			accounts.GET("/", transactionHandler.GetBalances)
 		}
 	}
 

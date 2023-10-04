@@ -3,13 +3,13 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"github.com/linqcod/transaction-system/consumer_service/internal/model"
+	"github.com/linqcod/transaction-system/publisher_service/internal/model"
 )
 
 const (
 	UpdateAccountFrozenBalanceQuery = `UPDATE accounts SET frozen_balance = $1 WHERE card_number=$2;`
-	UpdateAccountBalanceQuery       = `UPDATE accounts SET balance = $1 WHERE card_number=$2;`
 	GetAccountQuery                 = `SELECT id, card_number, balance, frozen_balance FROM accounts WHERE card_number=$1`
+	GetAccountsBalanceQuery         = `SELECT card_number, balance, frozen_balance FROM accounts;`
 )
 
 type AccountRepository struct {
@@ -39,12 +39,31 @@ func (r AccountRepository) GetAccount(card string) (*model.Account, error) {
 	return &account, nil
 }
 
-func (r AccountRepository) UpdateAccountBalance(card string, newBalance float64) error {
-	if err := r.db.QueryRowContext(r.ctx, UpdateAccountBalanceQuery, newBalance, card).Err(); err != nil {
-		return err
+func (r AccountRepository) GetAccountsBalance() ([]*model.AccountBalance, error) {
+	var accounts []*model.AccountBalance
+
+	rows, err := r.db.QueryContext(r.ctx, GetAccountsBalanceQuery)
+	if err != nil {
+		return nil, err
+	}
+	if rows.Err() != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var account model.AccountBalance
+		if err := rows.Scan(
+			&account.CardNumber,
+			&account.ActualBalance,
+			&account.FrozenBalance,
+		); err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, &account)
 	}
 
-	return nil
+	return accounts, nil
 }
 
 func (r AccountRepository) UpdateAccountFrozenBalance(card string, newFrozenBalance float64) error {
